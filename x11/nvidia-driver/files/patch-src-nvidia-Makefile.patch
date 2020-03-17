@@ -1,0 +1,11 @@
+--- src/nvidia/Makefile.orig	2020-03-17 04:21:12.818538000 +0300
++++ src/nvidia/Makefile	2020-03-17 04:21:26.485226000 +0300
+@@ -23,6 +23,8 @@
+ CFLAGS+=	-D__KERNEL__ -DNVRM  -Wno-unused-function -Wuninitialized -O2 -fno-strict-aliasing  -mno-red-zone -mcmodel=kernel     -UDEBUG -U_DEBUG -DNDEBUG
+ CFLAGS+=	-DNV_SPECTRE_V2=$(SPECTRE_V2_RETPOLINE)
+ 
++CFLAGS+=	-I${SYSDIR}/compat/linuxkpi/common/include
++
+ include ../common/optional-cflags.mk
+ 
+ OBJS+=		${RMOBJ}

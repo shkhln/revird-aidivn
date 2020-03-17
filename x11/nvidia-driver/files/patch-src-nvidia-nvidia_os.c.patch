@@ -1,0 +1,123 @@
+--- src/nvidia/nvidia_os.c.orig	2020-02-21 03:55:08.000000000 +0300
++++ src/nvidia/nvidia_os.c	2020-03-17 23:41:54.697875000 +0300
+@@ -953,13 +953,94 @@
+ {
+ }
+ 
++// source: common/inc/nv-mm.h
++
++#include <linux/mm.h>
++
++static inline long NV_GET_USER_PAGES(unsigned long start,
++                                     unsigned long nr_pages,
++                                     int write,
++                                     int force,
++                                     struct page **pages,
++                                     struct vm_area_struct **vmas)
++{
++    unsigned int flags = 0;
++
++    if (write)
++        flags |= FOLL_WRITE;
++    if (force)
++        flags |= FOLL_FORCE;
++
++    return get_user_pages(start, nr_pages, flags, pages, vmas);
++}
++
++// !common/inc/nv-mm.h
++
++#include <linux/preempt.h> // in_interrupt
++#include <linux/kthread.h> // current, in_atomic
++
++#define	irqs_disabled() (curthread->td_critnest != 0 || curthread->td_intr_nesting_level != 0) // source: kms-drm repo
++
++// source: common/inc/nv-linux.h
++
++#define NV_IN_ATOMIC() in_atomic()
++#define NV_MAY_SLEEP() (!irqs_disabled() && !in_interrupt() && !NV_IN_ATOMIC())
++
++// !common/inc/nv-linux.h
++
++// source: nvidia/os-mlock.c
++
+ NV_STATUS NV_API_CALL os_lock_user_pages(
+     void   *address,
+     NvU64   page_count,
+     void  **page_array
+ )
+ {
+-    return NV_ERR_NOT_SUPPORTED;
++    NV_STATUS rmStatus;
++    struct mm_struct *mm = current->mm;
++    struct page **user_pages;
++    NvU64 i, pinned;
++    NvBool write = 1, force = 0;
++    int ret;
++
++    if (!NV_MAY_SLEEP())
++    {
++        nv_printf(NV_DBG_ERRORS,
++            "NVRM: %s(): invalid context!\n", __FUNCTION__);
++        return NV_ERR_NOT_SUPPORTED;
++    }
++
++    rmStatus = os_alloc_mem((void **)&user_pages,
++            (page_count * sizeof(*user_pages)));
++    if (rmStatus != NV_OK)
++    {
++        nv_printf(NV_DBG_ERRORS,
++                "NVRM: failed to allocate page table!\n");
++        return rmStatus;
++    }
++
++    down_read(&mm->mmap_sem);
++    ret = NV_GET_USER_PAGES((unsigned long)address,
++                            page_count, write, force, user_pages, NULL);
++    up_read(&mm->mmap_sem);
++    pinned = ret;
++
++    if (ret < 0)
++    {
++        os_free_mem(user_pages);
++        return NV_ERR_INVALID_ADDRESS;
++    }
++    else if (pinned < page_count)
++    {
++        for (i = 0; i < pinned; i++)
++            put_page(user_pages[i]);
++        os_free_mem(user_pages);
++        return NV_ERR_INVALID_ADDRESS;
++    }
++
++    *page_array = user_pages;
++
++    return NV_OK;
+ }
+ 
+ NV_STATUS NV_API_CALL os_unlock_user_pages(
+@@ -967,8 +1048,23 @@
+     void  *page_array
+ )
+ {
+-    return NV_ERR_NOT_SUPPORTED;
++    NvBool write = 1;
++    struct page **user_pages = page_array;
++    NvU32 i;
++
++    for (i = 0; i < page_count; i++)
++    {
++        if (write)
++            set_page_dirty_lock(user_pages[i]);
++        put_page(user_pages[i]);
++    }
++
++    os_free_mem(user_pages);
++
++    return NV_OK;
+ }
++
++// !nvidia/os-mlock.c
+ 
+ NV_STATUS NV_API_CALL os_lookup_user_io_memory(
+     void   *address,
