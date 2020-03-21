@@ -1,6 +1,6 @@
 --- src/nvidia/nvidia_subr.c.orig	2020-02-21 03:55:08.000000000 +0300
-+++ src/nvidia/nvidia_subr.c	2020-03-17 23:42:44.118010000 +0300
-@@ -1729,24 +1729,282 @@
++++ src/nvidia/nvidia_subr.c	2020-03-21 06:32:11.793431000 +0300
+@@ -1729,24 +1729,255 @@
      return NV_FALSE;
  }
  
@@ -12,31 +12,6 @@
 +#define	page_to_phys(x) VM_PAGE_TO_PHYS(x) // source: sys/dev/drm2/drm_os_freebsd.h
 +
 +// source: common/inc/nv-linux.h
-+
-+#define NV_MAX_REGISTRY_KEYS_LENGTH   512
-+
-+typedef struct nv_work_s {
-+    struct work_struct task;
-+    void *data;
-+} nv_work_t;
-+
-+/* linux-specific version of old nv_state_t */
-+/* this is a general os-specific state structure. the first element *must* be
-+   the general state structure, for the generic unix-based code */
-+typedef struct nv_linux_state_s {
-+    nv_state_t nv_state;
-+
-+    atomic_t usage_count;
-+    NvU32    suspend_count;
-+
-+    struct device  *dev;
-+    struct pci_dev *pci_dev;
-+
-+    // ...
-+
-+} nv_linux_state_t;
-+
-+#define NV_GET_NVL_FROM_NV_STATE(nv)    ((nv_linux_state_t *)nv->os_state)
 +
 +typedef struct nv_alloc_s {
 +    struct nv_alloc_s *next;
@@ -212,15 +187,13 @@
 +    NvU64 i;
 +    struct page **user_pages;
 +    //nv_linux_state_t *nvl;
-+    struct nvidia_softc *nvl;
 +    nvidia_pte_t *page_ptr;
 +
 +    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_register_user_pages: 0x%x\n", page_count);
 +    user_pages = *priv_data;
-+    //nvl = NV_GET_NVL_FROM_NV_STATE(nv); // TODO: might be (incompatible) FreeBSD state
-+    nvl = nv->os_state;
++    //nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 +
-+    at = nvos_create_alloc(nvl->dev, page_count);
++    at = nvos_create_alloc(/*nvl->dev*/ NULL, page_count);
 +
 +    if (at == NULL)
 +    {
