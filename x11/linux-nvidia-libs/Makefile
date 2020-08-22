@@ -1,7 +1,7 @@
 # $FreeBSD$
 
 PORTNAME=	nvidia-libs
-DISTVERSION?=	440.100
+DISTVERSION?=	450.66
 # Always try to set PORTREVISION as it can be overridden by the slave ports
 PORTREVISION?=	0
 CATEGORIES=	x11 linux
@@ -93,11 +93,16 @@ PLIST_RE+=	'\,${LINUXBASE}.*libEGL_nvidia\.so\.${PORTVERSION},d'
 .else
 PLIST_RE+=	'\,${LINUXBASE}.*libEGL_nvidia\.so,d'
 .endif
+.if ${NVVERSION} >= 361.016 && ${NVVERSION} < 450.051
+LINUX_LIBS+=	libnvidia-fatbinaryloader.so.${PORTVERSION}
+LINUX32_LIBS+=	libnvidia-fatbinaryloader.so.${PORTVERSION}
+.else
+PLIST_RE+=	'\,${LINUXBASE}.*libnvidia-fatbinaryloader\.so,d'
+.endif
 .if ${NVVERSION} >= 361.016
 LINUX_LIBS+=	libGLESv1_CM_nvidia.so.${PORTVERSION} \
 		libGLESv2_nvidia.so.${PORTVERSION} \
 		libGLX_nvidia.so.${PORTVERSION} \
-		libnvidia-fatbinaryloader.so.${PORTVERSION} \
 		libnvidia-ptxjitcompiler.so.${PORTVERSION}
 LINUX_LINKS+=	libGLESv1_CM_nvidia.so.${PORTVERSION} libGLESv1_CM_nvidia.so.1 \
 		libGLESv2_nvidia.so.${PORTVERSION} libGLESv2_nvidia.so.2 \
@@ -108,7 +113,6 @@ LINUX_LINKS+=	libGLESv1_CM_nvidia.so.${PORTVERSION} libGLESv1_CM_nvidia.so.1 \
 LINUX32_LIBS+=	libGLESv1_CM_nvidia.so.${PORTVERSION} \
 		libGLESv2_nvidia.so.${PORTVERSION} \
 		libGLX_nvidia.so.${PORTVERSION} \
-		libnvidia-fatbinaryloader.so.${PORTVERSION} \
 		libnvidia-ptxjitcompiler.so.${PORTVERSION}
 LINUX32_LINKS+=	libGLESv1_CM_nvidia.so.${PORTVERSION} libGLESv1_CM_nvidia.so.1 \
 		libGLESv2_nvidia.so.${PORTVERSION} libGLESv2_nvidia.so.2 \
@@ -119,7 +123,6 @@ LINUX32_LINKS+=	libGLESv1_CM_nvidia.so.${PORTVERSION} libGLESv1_CM_nvidia.so.1 \
 .else
 PLIST_RE+=	'\,${LINUXBASE}.*libGLESv(1_CM|2)_nvidia\.so,d' \
 		'\,${LINUXBASE}.*libGLX_(nvidia|indirect)\.so,d' \
-		'\,${LINUXBASE}.*libnvidia-fatbinaryloader\.so,d' \
 		'\,${LINUXBASE}.*libnvidia-ptxjitcompiler\.so,d'
 .endif
 .if ${NVVERSION} >= 440.026
