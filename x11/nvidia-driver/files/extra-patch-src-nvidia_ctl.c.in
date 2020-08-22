@@ -1,4 +1,4 @@
---- src/%%NVSRC%%/nvidia_ctl.c.orig	2017-09-14 20:46:30 UTC
+--- src/%%NVSRC%%/nvidia_ctl.c.orig	2020-08-12 19:53:18 UTC
 +++ src/%%NVSRC%%/nvidia_ctl.c
 @@ -13,6 +13,12 @@
  #include "nv.h"
@@ -43,7 +43,8 @@
      }
  
      nvidia_count++;
-@@ -153,13 +175,28 @@ int nvidia_ctl_attach(void)
+%%>= 450.051%%@@ -153,10 +175,25 @@ int nvidia_ctl_attach(void)
+%%<  450.051%%@@ -153,13 +175,28 @@ int nvidia_ctl_attach(void)
  
  int nvidia_ctl_detach(void)
  {
@@ -58,9 +59,9 @@
 +        .linux_char_device = 1
 +    };
 +#endif
-     struct nvidia_softc *sc;
- 
-     sc = &nvidia_ctl_sc;
+%%<  450.051%%     struct nvidia_softc *sc;
+%%<  450.051%% 
+%%<  450.051%%     sc = &nvidia_ctl_sc;
      nvidia_count--;
  
 -    if (nvidia_count == 0)

@@ -11,9 +11,9 @@
 # or `x11/nvidia-driver-304').
 
 PORTNAME?=	nvidia-driver
-DISTVERSION?=	440.100
+DISTVERSION?=	450.66
 # Always try to set PORTREVISION as it can be overridden by the slave ports
-PORTREVISION?=	1
+PORTREVISION?=	0
 CATEGORIES=	x11
 MASTER_SITES=	NVIDIA/XFree86/FreeBSD-${ARCH_SUFX}/${DISTVERSION}
 DISTNAME=	NVIDIA-FreeBSD-${ARCH_SUFX}-${DISTVERSION}
@@ -76,7 +76,7 @@ NVSRC=		nvidia
 # Initialize memory allocations to avoid spurious "lock re-initialization"
 # errors.  A little more detail can be found in bug 201340 starting around
 # comment #50.
-EXTRA_PATCHES+=	${FILESDIR}/extra-patch-src_nvidia-modeset_nvidia-modeset-freebsd.c
+SUB_PATCHES+=	extra-patch-src_nvidia-modeset_nvidia-modeset-freebsd.c
 .endif
 
 OPTIONS_DEFINE=	ACPI_PM LINUX WBINVD DOCS
@@ -114,6 +114,11 @@ CONFLICTS_INSTALL+=	nvidia-secondary-driver
 pre-patch:
 .for p in ${SUB_PATCHES}
 	@${SED} 's/%%NVSRC%%/${NVSRC}/g' ${PATCHDIR}/${p}.in > ${WRKDIR}/${p}
+.  if ${NVVERSION} >= 450.051
+	@${REINPLACE_CMD} -e '/%%<  450.051%%/d' -e 's/%%>= 450.051%%//' ${WRKDIR}/${p}
+.  else
+	@${REINPLACE_CMD} -e '/%%>= 450.051%%/d' -e 's/%%<  450.051%%//' ${WRKDIR}/${p}
+.  endif
 .endfor
 .for p in ${SUB_PATCHES}
 EXTRA_PATCHES+=	${WRKDIR}/${p}

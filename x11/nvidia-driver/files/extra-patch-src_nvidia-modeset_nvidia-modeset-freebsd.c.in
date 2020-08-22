@@ -1,9 +1,11 @@
---- src/nvidia-modeset/nvidia-modeset-freebsd.c.orig	2018-08-21 23:09:28 UTC
+--- src/nvidia-modeset/nvidia-modeset-freebsd.c.orig	2020-08-12 19:53:18 UTC
 +++ src/nvidia-modeset/nvidia-modeset-freebsd.c
-@@ -25,6 +25,7 @@
+%%>= 450.051%%@@ -25,7 +25,8 @@
+%%<  450.051%%@@ -25,6 +25,7 @@
  #include <sys/poll.h>
  #include <sys/file.h>
  #include <sys/proc.h>
+%%>= 450.051%% #include <sys/stack.h>
 +#include <sys/sysproto.h>
  
  #include "nvkms-ioctl.h"
