@@ -15,3 +15,30 @@
  cpu="generic"
  intrinsics="none"
  
+@@ -4236,7 +4239,7 @@
+     nvcc_default="nvcc"
+     nvccflags_default="-gencode arch=compute_30,code=sm_30 -O2"
+ else
+-    nvcc_default="clang"
++    nvcc_default="clang90"
+     nvccflags_default="--cuda-gpu-arch=sm_30 -O2"
+     NVCC_C=""
+ fi
+@@ -6572,7 +6578,7 @@
+         mingw32*|mingw64*|win32|win64|linux|cygwin*)
+             ;;
+         *)
+-            disable ffnvcodec cuvid nvdec nvenc
++            #disable ffnvcodec cuvid nvdec nvenc
+             ;;
+     esac
+ elif enabled ppc64 && ! enabled bigendian; then
+@@ -6584,7 +6590,7 @@
+             ;;
+     esac
+ else
+-    disable ffnvcodec cuvid nvdec nvenc
++    #disable ffnvcodec cuvid nvdec nvenc
+ fi
+ 
+ enabled ffnvcodec && enable cuda
