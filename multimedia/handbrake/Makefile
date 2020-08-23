@@ -18,7 +18,8 @@ ONLY_FOR_ARCHS=	amd64 i386 powerpc64 powerpc
 BUILD_DEPENDS=	bash:shells/bash \
 		nasm:devel/nasm \
 		cmake:devel/cmake \
-		meson:devel/meson
+		meson:devel/meson \
+		${LOCALBASE}/include/ffnvcodec/nvEncodeAPI.h:devel/nv-codec-headers
 LIB_DEPENDS=	libdbus-1.so:devel/dbus \
 		libharfbuzz.so:print/harfbuzz \
 		libfontconfig.so:x11-fonts/fontconfig \
@@ -40,6 +41,8 @@ LIB_DEPENDS=	libdbus-1.so:devel/dbus \
 
 USES=		autoreconf:build compiler:c11 gmake iconv \
 		libtool:build localbase:ldflags pkgconfig python:3.6+,build
+
+CC=		${LOCALBASE}/bin/clang90 # ?
 
 CONTRIB_FILES=	fdk-aac-2.0.1.tar.gz \
 		ffmpeg-4.2.3.tar.bz2 \
@@ -127,6 +130,8 @@ post-extract: .SILENT
 # for powerpc64.
 # picked from multimedia/ffmpeg/files/patch-libswscale_ppc_swscale__altivec.c
 	${CP} ${FILESDIR}/P02-freebsd-ppc-libswscale.patch ${WRKSRC}/contrib/ffmpeg
+# CUDA
+	${CP} ${FILESDIR}/P99-freebsd-ffmpeg-configure.patch ${WRKSRC}/contrib/ffmpeg
 
 post-install-X11-on:
 	${LN} -sf ghb ${STAGEDIR}${PREFIX}/bin/HandBrake
