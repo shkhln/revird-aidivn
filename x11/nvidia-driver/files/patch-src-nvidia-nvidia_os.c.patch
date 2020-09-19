@@ -1,9 +1,16 @@
 --- src/nvidia/nvidia_os.c.orig	2020-02-21 03:55:08.000000000 +0300
 +++ src/nvidia/nvidia_os.c	2020-03-17 23:41:54.697875000 +0300
-@@ -953,13 +953,94 @@
+@@ -953,14 +953,119 @@
  {
  }
  
++
++#undef NSEC_PER_SEC
++
++#include <nvmisc.h>
++
++#undef BIT
++
 +// source: common/inc/nv-mm.h
 +
 +#include <linux/mm.h>
@@ -25,6 +32,23 @@
 +    return get_user_pages(start, nr_pages, flags, pages, vmas);
 +}
 +
++static inline void nv_mmap_read_lock(struct mm_struct *mm)
++{
++#if defined(NV_MM_HAS_MMAP_LOCK)
++    mmap_read_lock(mm);
++#else
++    down_read(&mm->mmap_sem);
++#endif
++}
++
++static inline void nv_mmap_read_unlock(struct mm_struct *mm)
++{
++#if defined(NV_MM_HAS_MMAP_LOCK)
++    mmap_read_unlock(mm);
++#else
++    up_read(&mm->mmap_sem);
++#endif
++}
 +// !common/inc/nv-mm.h
 +
 +#include <linux/preempt.h> // in_interrupt
@@ -44,7 +68,8 @@
  NV_STATUS NV_API_CALL os_lock_user_pages(
      void   *address,
      NvU64   page_count,
-     void  **page_array
+     void  **page_array,
+     NvU32   flags
  )
  {
 -    return NV_ERR_NOT_SUPPORTED;
@@ -52,7 +77,7 @@
 +    struct mm_struct *mm = current->mm;
 +    struct page **user_pages;
 +    NvU64 i, pinned;
-+    NvBool write = 1, force = 0;
++    NvBool write = DRF_VAL(_LOCK_USER_PAGES, _FLAGS, _WRITE, flags), force = 0;
 +    int ret;
 +
 +    if (!NV_MAY_SLEEP())
@@ -71,10 +96,10 @@
 +        return rmStatus;
 +    }
 +
-+    down_read(&mm->mmap_sem);
++    nv_mmap_read_lock(mm);
 +    ret = NV_GET_USER_PAGES((unsigned long)address,
 +                            page_count, write, force, user_pages, NULL);
-+    up_read(&mm->mmap_sem);
++    nv_mmap_read_unlock(mm);
 +    pinned = ret;
 +
 +    if (ret < 0)
@@ -96,7 +121,8 @@
  }
  
  NV_STATUS NV_API_CALL os_unlock_user_pages(
-@@ -967,8 +1048,23 @@
+@@ -967,9 +1048,24 @@
+     NvU64  page_count,
      void  *page_array
  )
  {

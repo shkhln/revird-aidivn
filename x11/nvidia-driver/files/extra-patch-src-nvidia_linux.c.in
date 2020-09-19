@@ -1,14 +1,15 @@
 --- src/%%NVSRC%%/nvidia_linux.c.orig	2017-09-14 20:46:30 UTC
 +++ src/%%NVSRC%%/nvidia_linux.c
-@@ -35,23 +35,16 @@ int linux_ioctl_nvidia(
+%%>= 455.023%%@@ -35,21 +35,16 @@ int linux_ioctl_nvidia(
+%%<  455.023%%@@ -35,23 +35,16 @@ int linux_ioctl_nvidia(
      struct linux_ioctl_args *args
  )
  {
 -    struct file *fp;
 -    int error;
--#if __FreeBSD_version >= 1000053
+%%<  455.023%%-#if __FreeBSD_version >= 1000053
 -    cap_rights_t rights;
--#endif
+%%<  455.023%%-#endif
 -    u_long cmd;
 +    static const uint32_t dir[4] = { IOC_VOID, IOC_IN, IOC_OUT, IOC_INOUT };
  

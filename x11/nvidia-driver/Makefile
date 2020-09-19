@@ -11,7 +11,7 @@
 # or `x11/nvidia-driver-304').
 
 PORTNAME?=	nvidia-driver
-DISTVERSION?=	450.66
+DISTVERSION?=	455.23.04
 # Always try to set PORTREVISION as it can be overridden by the slave ports
 PORTREVISION?=	0
 CATEGORIES=	x11
@@ -114,6 +114,11 @@ CONFLICTS_INSTALL+=	nvidia-secondary-driver
 pre-patch:
 .for p in ${SUB_PATCHES}
 	@${SED} 's/%%NVSRC%%/${NVSRC}/g' ${PATCHDIR}/${p}.in > ${WRKDIR}/${p}
+.  if ${NVVERSION} >= 455.02304
+	@${REINPLACE_CMD} -e '/%%<  455.023%%/d' -e 's/%%>= 455.023%%//' ${WRKDIR}/${p}
+.  else
+	@${REINPLACE_CMD} -e '/%%>= 455.023%%/d' -e 's/%%<  455.023%%//' ${WRKDIR}/${p}
+.  endif
 .  if ${NVVERSION} >= 450.051
 	@${REINPLACE_CMD} -e '/%%<  450.051%%/d' -e 's/%%>= 450.051%%//' ${WRKDIR}/${p}
 .  else

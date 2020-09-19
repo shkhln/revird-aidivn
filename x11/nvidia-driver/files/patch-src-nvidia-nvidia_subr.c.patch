@@ -1,6 +1,6 @@
 --- src/nvidia/nvidia_subr.c.orig	2020-02-21 03:55:08.000000000 +0300
 +++ src/nvidia/nvidia_subr.c	2020-03-21 06:32:11.793431000 +0300
-@@ -1729,24 +1729,255 @@
+@@ -1822,25 +1822,253 @@
      return NV_FALSE;
  }
  
@@ -17,7 +17,17 @@
 +    struct nv_alloc_s *next;
 +    struct device     *dev;
 +    atomic_t       usage_count;
-+    unsigned int   flags;
++    struct {
++        NvBool contig   : 1;
++        NvBool guest    : 1;
++        NvBool zeroed   : 1;
++        NvBool aliased  : 1;
++        NvBool user     : 1;
++        NvBool node0    : 1;
++        NvBool peer_io  : 1;
++        NvBool physical : 1;
++    } flags;
++    unsigned int   cache_type;
 +    unsigned int   num_pages;
 +    unsigned int   order;
 +    unsigned int   size;
@@ -25,6 +35,7 @@
 +    unsigned int   pid;
 +    struct page  **user_pages;
 +    NvU64         guest_id;             /* id of guest VM */
++    void          *import_priv;
 +} nv_alloc_t;
 +
 +#define NV_DBG_MEMINFO NV_DBG_INFO
@@ -60,36 +71,6 @@
 +    kmem_cache_alloc(kmem_cache, GFP_KERNEL)
 +#define NV_KMEM_CACHE_FREE(ptr, kmem_cache) \
 +    kmem_cache_free(kmem_cache, ptr)
-+
-+#define NV_ALLOC_TYPE_PCI               (1<<0)
-+#define NV_ALLOC_TYPE_CONTIG            (1<<2)
-+#define NV_ALLOC_TYPE_GUEST             (1<<3)
-+#define NV_ALLOC_TYPE_ZEROED            (1<<4)
-+#define NV_ALLOC_TYPE_ALIASED           (1<<5)
-+#define NV_ALLOC_TYPE_USER              (1<<6)
-+#define NV_ALLOC_TYPE_NODE0             (1<<7)
-+#define NV_ALLOC_TYPE_PEER_IO           (1<<8)
-+#define NV_ALLOC_TYPE_PHYSICAL          (1<<9)
-+
-+#define NV_ALLOC_MAPPING_SHIFT      16
-+#define NV_ALLOC_ENC_MAPPING(flags) ((flags)<<NV_ALLOC_MAPPING_SHIFT)
-+
-+static inline NvU32 nv_alloc_init_flags(int cached, int contiguous, int zeroed)
-+{
-+    NvU32 flags = NV_ALLOC_ENC_MAPPING(cached);
-+    flags |= NV_ALLOC_TYPE_PCI;
-+    if (contiguous)
-+        flags |= NV_ALLOC_TYPE_CONTIG;
-+    if (zeroed)
-+        flags |= NV_ALLOC_TYPE_ZEROED;
-+#if defined(NVCPU_FAMILY_ARM)
-+    if (!NV_ALLOC_MAPPING_CACHED(flags))
-+        flags |= NV_ALLOC_TYPE_ALIASED;
-+#endif
-+    return flags;
-+}
-+
-+#define NV_ALLOC_MAPPING_USER(flags)              ((flags) & NV_ALLOC_TYPE_USER)
 +
 +// !common/inc/nv-linux.h
 +
@@ -179,6 +160,7 @@
      nv_state_t *nv,
      NvU64       page_count,
      NvU64      *phys_addr,
+     void       *import_priv,
 -    void      **priv
 +    void      **priv_data
  )
@@ -205,8 +187,12 @@
 +     * Anonymous memory currently must be write-back cacheable, and we can't
 +     * enforce contiguity.
 +     */
-+    at->flags = nv_alloc_init_flags(1, 0, 0);
-+    at->flags |= NV_ALLOC_TYPE_USER;
++    at->cache_type = NV_MEMORY_UNCACHED;
++//~ #if defined(NVCPU_FAMILY_ARM)
++    //~ at->flags.aliased = NV_TRUE;
++//~ #endif
++
++    at->flags.user = NV_TRUE;
 +
 +    at->order = get_order(at->num_pages * PAGE_SIZE);
 +
@@ -224,6 +210,13 @@
 +
 +    /* Save off the user pages array to be restored later */
 +    at->user_pages = user_pages;
++
++    /* Save off the import private data to be returned later */
++    if (import_priv != NULL)
++    {
++        at->import_priv = import_priv;
++    }
++
 +    *priv_data = at;
 +
 +    //~ NV_PRINT_AT(NV_DBG_MEMINFO, at);
@@ -231,9 +224,10 @@
      return NV_OK;
  }
  
- NV_STATUS NV_API_CALL nv_unregister_user_pages(
+ void NV_API_CALL nv_unregister_user_pages(
      nv_state_t *nv,
      NvU64       page_count,
+     void      **import_priv,
 -    void      **priv
 +    void      **priv_data
  )
@@ -244,14 +238,18 @@
 +
 +    //~ NV_PRINT_AT(NV_DBG_MEMINFO, at);
 +
-+    WARN_ON(!NV_ALLOC_MAPPING_USER(at->flags));
++    WARN_ON(!at->flags.user);
 +
 +    /* Restore the user pages array for the caller to handle */
 +    *priv_data = at->user_pages;
 +
-+    nvos_free_alloc(at);
++    /* Return the import private data for the caller to handle */
++    if (import_priv != NULL)
++    {
++        *import_priv = at->import_priv;
++    }
 +
-     return NV_OK;
++    nvos_free_alloc(at);
  }
 +
 +// !nvidia/nv.c
