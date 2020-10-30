@@ -1,6 +1,6 @@
 --- src/nvidia/nvidia_os.c.orig	2020-02-21 03:55:08.000000000 +0300
 +++ src/nvidia/nvidia_os.c	2020-03-17 23:41:54.697875000 +0300
-@@ -953,14 +953,119 @@
+@@ -953,14 +953,128 @@
  {
  }
  
@@ -14,6 +14,15 @@
 +// source: common/inc/nv-mm.h
 +
 +#include <linux/mm.h>
++
++// https://reviews.freebsd.org/D23002
++static inline void
++set_page_dirty_lock(struct vm_page *page)
++{
++	vm_page_lock(page);
++	vm_page_dirty(page);
++	vm_page_unlock(page);
++}
 +
 +static inline long NV_GET_USER_PAGES(unsigned long start,
 +                                     unsigned long nr_pages,
