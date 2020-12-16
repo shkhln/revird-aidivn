@@ -11,7 +11,7 @@
 # or `x11/nvidia-driver-304').
 
 PORTNAME?=	nvidia-driver
-DISTVERSION?=	455.38
+DISTVERSION?=	460.27.04
 # Always try to set PORTREVISION as it can be overridden by the slave ports
 PORTREVISION?=	0
 CATEGORIES=	x11
@@ -38,9 +38,13 @@ USE_LDCONFIG=	yes
 
 GLVND_JSON_PATH=	${PREFIX}/share/glvnd/egl_vendor.d
 WAYLAND_JSON_PATH=	${PREFIX}/share/egl/egl_external_platform.d
+VKICD_PATH=		${PREFIX}/share/vulkan/icd.d
+VKLAYERS_PATH=		${PREFIX}/share/vulkan/implicit_layer.d
 MAKE_ENV=	DEBUG_FLAGS=${DEBUG_FLAGS} \
 		EGL_GLVND_JSON_PATH=${STAGEDIR}${GLVND_JSON_PATH} \
-		EGL_WAYLAND_JSON_PATH=${STAGEDIR}${WAYLAND_JSON_PATH}
+		EGL_WAYLAND_JSON_PATH=${STAGEDIR}${WAYLAND_JSON_PATH} \
+		VKICD_PATH=${STAGEDIR}${VKICD_PATH} \
+		VKLAYERS_PATH=${STAGEDIR}${VKLAYERS_PATH}
 SUB_FILES=	pkg-message
 .if !defined(LIBGLDIR)
 SUB_FILES+=	nvidia.conf
