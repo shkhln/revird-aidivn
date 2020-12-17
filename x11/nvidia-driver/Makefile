@@ -283,6 +283,9 @@ post-install: .SILENT
 .if ${NVVERSION} < 440.036
 	${REINPLACE_CMD} -e '/lib32\//d' ${TMPPLIST}
 .endif
+.if ${NVVERSION} < 460.02704
+	${REINPLACE_CMD} -e '/glvkspirv/d' -e '/vulkan/d' ${TMPPLIST}
+.endif
 .if ${NVVERSION} < 410.057
 # Rename some libraries and install a libmap file to resolve conflict with
 # Mesa libraries.
