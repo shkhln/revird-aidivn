@@ -11,7 +11,7 @@
 # or `x11/nvidia-driver-304').
 
 PORTNAME?=	nvidia-driver
-DISTVERSION?=	465.19.01
+DISTVERSION?=	465.24.02
 # Always try to set PORTREVISION as it can be overridden by the slave ports
 PORTREVISION?=	0
 CATEGORIES=	x11
@@ -287,7 +287,7 @@ post-install: .SILENT
 .if ${NVVERSION} < 440.036
 	${REINPLACE_CMD} -e '/lib32\//d' ${TMPPLIST}
 .endif
-.if ${NVVERSION} < 460.02704
+.if ${NVVERSION} < 465.01901
 	${REINPLACE_CMD} -e '/glvkspirv/d' -e '/vulkan/d' ${TMPPLIST}
 .endif
 .if ${NVVERSION} < 410.057
