@@ -1,3 +1,36 @@
+--- src/nvidia/nvidia_os.c.orig	2021-04-08 21:02:56.000000000 +0300
++++ src/nvidia/nvidia_os.c	2021-04-18 17:02:13.223341000 +0300
+@@ -810,6 +810,30 @@ void NV_API_CALL os_get_screen_info(
+             *pFbPitch = efifb->fb_stride * (bpp / NBBY);
+             return;
+         }
++
++#ifdef MODINFOMD_VBE_FB
++        const struct vbe_fb *vbefb =
++            (const struct vbe_fb *)preload_search_info(kmdp, MODINFO_METADATA |
++                                                             MODINFOMD_VBE_FB);
++
++        /* Make sure base address is mapped to GPU BAR */
++        if ((vbefb != NULL) &&
++            ((vbefb->fb_addr == consoleBar1Address) ||
++             (vbefb->fb_addr == consoleBar2Address)))
++        {
++            int depth = fls(vbefb->fb_mask_red | vbefb->fb_mask_green |
++                            vbefb->fb_mask_blue | vbefb->fb_mask_reserved);
++            int bpp = roundup2(depth, NBBY);
++
++            *pPhysicalAddress = vbefb->fb_addr;
++            *pFbWidth = vbefb->fb_width;
++            *pFbHeight = vbefb->fb_height;
++            *pFbDepth = depth;
++            /* fb_stride is in pixels. Convert to bytes */
++            *pFbPitch = vbefb->fb_stride * (bpp / NBBY);
++            return;
++        }
++#endif
+     }
+     {
+         const sc_softc_t *sc = sc_get_softc(0, SC_KERNEL_CONSOLE);
 --- src/nvidia/nvidia_os.c.orig	2020-02-21 03:55:08.000000000 +0300
 +++ src/nvidia/nvidia_os.c	2020-03-17 23:41:54.697875000 +0300
 @@ -953,14 +953,128 @@
