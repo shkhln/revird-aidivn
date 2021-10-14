@@ -11,7 +11,7 @@
 # or `x11/nvidia-driver-304').
 
 PORTNAME?=	nvidia-driver
-DISTVERSION?=	470.74
+DISTVERSION?=	495.29.05
 # Always try to set PORTREVISION as it can be overridden by the slave ports
 PORTREVISION?=	0
 CATEGORIES=	x11
@@ -40,11 +40,13 @@ USE_LDCONFIG=	yes
 USES+=		tar:xz
 .endif
 
+EGL_EP_JSON_PATH=	${PREFIX}/share/egl/egl_external_platform.d
 GLVND_JSON_PATH=	${PREFIX}/share/glvnd/egl_vendor.d
 WAYLAND_JSON_PATH=	${PREFIX}/share/egl/egl_external_platform.d
 VKICD_PATH=		${PREFIX}/share/vulkan/icd.d
 VKLAYERS_PATH=		${PREFIX}/share/vulkan/implicit_layer.d
 MAKE_ENV=	DEBUG_FLAGS=${DEBUG_FLAGS} \
+		EGL_EXTERNAL_PLATFORM_JSON_PATH=${STAGEDIR}${EGL_EP_JSON_PATH} \
 		EGL_GLVND_JSON_PATH=${STAGEDIR}${GLVND_JSON_PATH} \
 		EGL_WAYLAND_JSON_PATH=${STAGEDIR}${WAYLAND_JSON_PATH} \
 		VKICD_PATH=${STAGEDIR}${VKICD_PATH} \
@@ -295,6 +297,9 @@ post-install: .SILENT
 .endif
 .if ${NVVERSION} < 465.01901
 	${REINPLACE_CMD} -e '/glvkspirv/d' -e '/vulkan/d' ${TMPPLIST}
+.endif
+.if ${NVVERSION} < 470.074
+	${REINPLACE_CMD} -e '/libnvidia-vulkan-producer\.so/d' ${TMPPLIST}
 .endif
 .if ${NVVERSION} < 410.057
 # Rename some libraries and install a libmap file to resolve conflict with
